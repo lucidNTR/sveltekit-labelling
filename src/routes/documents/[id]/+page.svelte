@@ -3,6 +3,7 @@
   import { tick } from 'svelte';
   import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+  import { browser } from '$app/environment';
 
   export let data;
   $: docId = $page.params.id;
@@ -19,7 +20,7 @@
     'bg-yellow-100 text-yellow-800 border-yellow-300'
   ]
 
-  let autoAdvance = typeof localStorage !== 'undefined' ? JSON.parse(localStorage?.getItem('autoAdvance')) : null
+  $: autoAdvance = browser ? JSON.parse(localStorage?.getItem('autoAdvance')) : null
   function toggleAutoAdvance () {
     autoAdvance = !autoAdvance
     localStorage?.setItem('autoAdvance', autoAdvance)
@@ -30,10 +31,14 @@
       const newDoc = await response.json()
       doc = newDoc
       data.rows[docIndex] = doc
+    } else {
+      alert('unknown error occurred, please reload the app')
     }
   }
 
+  let loading = null
   async function execute (action) {
+    loading = action
     const response = await fetch(`/documents/${docId}`, {
       method: 'POST',
       body: JSON.stringify({ action }),
@@ -41,7 +46,9 @@
         'Content-Type': 'application/json'
       }
     });
+
     await handleUpdate(response);
+    loading = false
 
     if ((action === 'approve' || action === 'reject') && autoAdvance) {
       let next = data.rows.find(doc => (!doc.approved && doc.approved !== false));
@@ -102,24 +109,46 @@
 
 <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
   <div class="inline-flex rounded-md mb-4" role="group">
-    <button disabled={doc.approved || !doc.labels?.length} on:click={() => execute('approve')} type="button" class="inline-flex disabled:bg-gray-200 stroke-green-600 fill-green-400 items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" class="w-4 h-4 mr-2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-      </svg>
+    <button disabled={loading || doc.approved || !doc.labels?.length} on:click={() => execute('approve')} type="button" class="inline-flex disabled:bg-gray-200 stroke-green-600 fill-green-400 items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
+      {#if loading === 'approve'}
+        <svg class="animate-spin w-4 h-4 mr-2 text-purple-500 stroke-purple-500 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      {:else}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" class="w-4 h-4 mr-2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      {/if}
       Approve Labels
     </button>
 
-    <button disabled={doc.approved === false || !doc.labels?.length} on:click={() => execute('reject')} type="button" class="inline-flex stroke-red-400 items-center px-4 py-2 text-sm font-medium disabled:bg-gray-200 text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" class="w-4 h-4 mr-2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-      </svg>
+    <button disabled={loading || doc.approved === false || !doc.labels?.length} on:click={() => execute('reject')} type="button" class="inline-flex stroke-red-400 items-center px-4 py-2 text-sm font-medium disabled:bg-gray-200 text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
+      {#if loading === 'reject'}
+        <svg class="animate-spin w-4 h-4 mr-2 text-purple-500 stroke-purple-500 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      {:else}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" class="w-4 h-4 mr-2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+      {/if}
+
       Reject Labels
     </button>
 
-    <button on:click={() => execute('suggest')} type="button" class="inline-flex items-center stroke-yellow-400 px-4 py-2 text-sm font-medium text-gray-900 disabled:bg-gray-200 bg-white border border-gray-200 rounded-r-md hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" class="w-4 h-4 mr-2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-      </svg>
+    <button disabled={loading} on:click={() => execute('suggest')} type="button" class="inline-flex items-center stroke-yellow-400 px-4 py-2 text-sm font-medium text-gray-900 disabled:bg-gray-200 bg-white border border-gray-200 rounded-r-md hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
+      {#if loading === 'suggest'}
+        <svg class="animate-spin w-4 h-4 mr-2 text-purple-500 stroke-purple-500 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      {:else}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" class="w-4 h-4 mr-2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+        </svg>
+      {/if}
 
       Suggest Labels
     </button>
