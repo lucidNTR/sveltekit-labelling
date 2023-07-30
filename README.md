@@ -1,6 +1,6 @@
 # Sveltekit iplementation of simple document labelling application
 
-Everything you need to the Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
 
 
 ## Starting
