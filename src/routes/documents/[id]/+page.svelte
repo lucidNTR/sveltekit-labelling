@@ -20,7 +20,7 @@
     'bg-yellow-100 text-yellow-800 border-yellow-300'
   ]
 
-  $: autoAdvance = browser ? JSON.parse(localStorage?.getItem('autoAdvance')) : null
+  let autoAdvance = browser ? (JSON.parse(localStorage?.getItem('autoAdvance')) || false) : null
   function toggleAutoAdvance () {
     autoAdvance = !autoAdvance
     localStorage?.setItem('autoAdvance', autoAdvance)
