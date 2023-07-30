@@ -20,6 +20,7 @@
     'bg-yellow-100 text-yellow-800 border-yellow-300'
   ]
 
+  // auto advance toggle is hidden on ssr side where we set it to null
   let autoAdvance = browser ? (JSON.parse(localStorage?.getItem('autoAdvance')) || false) : null
   function toggleAutoAdvance () {
     autoAdvance = !autoAdvance
@@ -36,6 +37,7 @@
     }
   }
 
+  /** @type null | string */
   let loading = null
   async function execute (action) {
     loading = action
@@ -46,13 +48,12 @@
         'Content-Type': 'application/json'
       }
     });
-
     await handleUpdate(response);
-    loading = false
+    loading = null
 
     if ((action === 'approve' || action === 'reject') && autoAdvance) {
+      // We first handle all open documents, if those are handled we go through the rejected ones
       let next = data.rows.find(doc => (!doc.approved && doc.approved !== false));
-
       if (!next) {
         next = data.rows.find(doc => doc.approved === false);
       }
