@@ -1,4 +1,5 @@
 <script>
+  /** @type boolean | null | undefined */
   export let approved = null;
 </script>
 
