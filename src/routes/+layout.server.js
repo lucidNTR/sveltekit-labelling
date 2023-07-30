@@ -1,5 +1,5 @@
-import data from '$lib/dataset.json'
+import * as data from '$lib/server/data.js';
 
-export function load () {
-  return data
+export function load() {
+	return data.getDocs();
 }
