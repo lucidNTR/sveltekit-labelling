@@ -2,6 +2,8 @@
 
 powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
 
+Demo at: https://sveltekit-labelling.pages.dev (backend state resets on ~ 10s of inactivity)
+
 ## Starting
 
 Once you've cloned the repo and installed dependencies with `pnpm install`, start a development server:
