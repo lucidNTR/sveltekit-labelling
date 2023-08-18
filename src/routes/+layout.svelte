@@ -1,5 +1,12 @@
 <script>
-	import '../app.css';
+	import '../app.css'
+  import { setContext } from 'svelte'
+  import makeDataStore from 'atreyu/data.js'
+
+
+  const data = makeDataStore()
+  setContext('ayu', { data })
+  window.ayu = data
 </script>
 
 <header>
@@ -22,7 +29,7 @@
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
 				</svg>
 
-				<span class="self-center whitespace-nowrap text-xl font-semibold">Labelling</span>
+				<span class="self-center whitespace-nowrap text-xl font-semibold">{$data.hello$}</span>
 			</a>
 		</div>
 	</nav>

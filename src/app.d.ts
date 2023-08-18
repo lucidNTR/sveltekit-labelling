@@ -11,11 +11,11 @@ declare global {
 			//   COUNTER: DurableObjectNamespace;
 			// };
 			context: {
-				waitUntil(promise: Promise<unknown>): void;
-			};
-			caches: CacheStorage & { default: Cache };
+				waitUntil(promise: Promise<unknown>): void
+			}
+			caches: CacheStorage & { default: Cache }
 		}
 	}
 }
 
-export {};
+export {}

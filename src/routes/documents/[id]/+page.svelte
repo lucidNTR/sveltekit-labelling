@@ -1,13 +1,13 @@
 <script>
   import StatusIcon from '$lib/components/status-icon.svelte'
-  import { tick } from 'svelte';
-  import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-  import { browser } from '$app/environment';
+  import { tick } from 'svelte'
+  import { goto } from '$app/navigation'
+	import { page } from '$app/stores'
+  import { browser } from '$app/environment'
 
-  export let data;
-  $: docId = $page.params.id;
-  $: docIndex = data.rows.findIndex(doc => doc.id === docId);
+  export let data
+  $: docId = $page.params.id
+  $: docIndex = data.rows.findIndex(doc => doc.id === docId)
   $: doc = data.rows[docIndex]
 
   const labelStyles = [
@@ -47,21 +47,21 @@
       headers: {
         'Content-Type': 'application/json'
       }
-    });
-    await handleUpdate(response);
+    })
+    await handleUpdate(response)
     loading = null
 
     if ((action === 'approve' || action === 'reject') && autoAdvance) {
       // We first handle all open documents, if those are handled we go through the rejected ones
-      let next = data.rows.find(doc => (!doc.approved && doc.approved !== false));
+      let next = data.rows.find(doc => (!doc.approved && doc.approved !== false))
       if (!next) {
-        next = data.rows.find(doc => doc.approved === false);
+        next = data.rows.find(doc => doc.approved === false)
       }
 
       if (next) {
-        goto('/documents/' + next.id);
+        goto('/documents/' + next.id)
       } else {
-        goto('/');
+        goto('/')
       }
     }
   }
