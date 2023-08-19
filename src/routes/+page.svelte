@@ -1,28 +1,29 @@
 <script>
-  import StatusIcon from '$lib/components/status-icon.svelte';
-	export let data;
+  import StatusIcon from '$lib/components/status-icon.svelte'
+  import { getContext } from 'svelte'
+  const { data } = getContext('ayu')
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
-		{#each data.rows as doc (doc.id)}
+		{#each $data.rows as doc (doc.$key)}
       <div
 				class="group relative rounded-lg border border-gray-300 bg-white p-6 shadow-sm focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500"
 			>
 				<div>
-					<StatusIcon approved={doc.approved}/>
+					<StatusIcon approved={doc.approved$}/>
 				</div>
 				<div class="mt-6">
 					<h3 class="text-base font-semibold leading-6 text-gray-900">
-						<a href="/documents/{doc.id}" class="focus:outline-none">
+						<a href="/documents/{doc.id$}" class="focus:outline-none">
 							<span class="absolute inset-0" aria-hidden="true" />
-							{doc.title}
+							{doc.title$}
 						</a>
 					</h3>
-					<p class="clamp mt-2 text-sm text-gray-500">{doc.body}</p>
+					<p class="clamp mt-2 text-sm text-gray-500">{doc.body$}</p>
 				</div>
 				<a
-					href={doc.url}
+					href={doc.url$}
 					target="_blanc"
 					class="absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"
 					aria-hidden="true"
