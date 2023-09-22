@@ -1,9 +1,23 @@
 <script>
   /** @type boolean | null | undefined */
-  export let approved = null;
+  export let approved = null
+  export let loading = false
 </script>
 
-{#if approved}
+{#if loading}
+  <span class="inline-flex rounded-lg bg-gray-200 p-3 text-gray-500 ring-4 ring-white animate-pulse" title="Loading">
+    <svg
+      class="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke-width="1.5"
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+
+    </svg>
+  </span>
+{:else if approved}
   <span class="inline-flex rounded-lg bg-green-50 p-3 text-green-700 ring-4 ring-white" title="Approved">
     <svg
       class="h-4 w-4"

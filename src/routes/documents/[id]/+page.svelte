@@ -6,9 +6,10 @@
   import { browser } from '$app/environment'
 
   export let data
+  const { ayu } = data
+
   $: docId = $page.params.id
-  $: docIndex = data.rows.findIndex(doc => doc.id === docId)
-  $: doc = data.rows[docIndex]
+  $: doc = $ayu.docs[docId]
 
   const labelStyles = [
     'border-blue-400 bg-blue-100 text-blue-800',
@@ -21,96 +22,81 @@
   ]
 
   // auto advance toggle is hidden on ssr side where we set it to null
-  let autoAdvance = browser ? (JSON.parse(localStorage?.getItem('autoAdvance')) || false) : null
+  let autoAdvance = browser ? (JSON.parse(localStorage?.getItem('autoAdvance') || 'false')) : null
   function toggleAutoAdvance () {
     autoAdvance = !autoAdvance
     localStorage?.setItem('autoAdvance', autoAdvance)
-  }
-
-  async function handleUpdate (response) {
-    if (response.ok) {
-      const newDoc = await response.json()
-      doc = newDoc
-      data.rows[docIndex] = doc
-    } else {
-      alert('unknown error occurred, please reload the app')
-    }
   }
 
   /** @type null | string */
   let loading = null
   async function execute (action) {
     loading = action
-    const response = await fetch(`/documents/${docId}`, {
-      method: 'POST',
-      body: JSON.stringify({ action }),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    await handleUpdate(response)
+     // TODO: streaming support (first stream dirty flag from falcor handler, then update with server result)
+    await doc[action]()
     loading = null
 
     if ((action === 'approve' || action === 'reject') && autoAdvance) {
-      // We first handle all open documents, if those are handled we go through the rejected ones
-      let next = data.rows.find(doc => (!doc.approved && doc.approved !== false))
-      if (!next) {
-        next = data.rows.find(doc => doc.approved === false)
-      }
+      const { json } = await $ayu.rows.findNext({docId})
+      // TODO: return { json, result } for easy access to unwrapped call result?
+      const nextId = json.rows.findNext
 
-      if (next) {
-        goto('/documents/' + next.id)
+      if (nextId) {
+        goto('/documents/' + nextId)
       } else {
         goto('/')
       }
     }
   }
 
-  async function remove (toRemove, i) {
+  /**
+   * @param {string} toRemove
+   * @param {number} i
+   * **/
+  function remove (toRemove, i) {
     if (toRemove === '') {
-      doc.labels = doc.labels.filter(label => label !== '');
+      labels = labels.filter(label => label !== '');
       return
     }
-    const response = await fetch(`/documents/${docId}`, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'removeLabel', label: toRemove, index: i }),
-      headers: { 'Content-Type': 'application/json' }
-    });
 
-    handleUpdate (response);
+    doc.removeLabel({ label: toRemove, index: i })
   }
 
-  async function updateLabel (e, i) {
+  /**
+   * @param {any} e
+   * @param {number} i
+   * **/
+  function updateLabel (e, i) {
     if (e.key === 'Enter') {
       e.preventDefault()
     } else if (e.type === 'keydown') {
       return
     }
+    // @ts-ignore
+    const label = e.target.innerText
 
-    if (!e.target.innerText) {
+    if (!label) {
       return
     }
 
-    const response = await fetch(`/documents/${docId}`, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateLabel', label: e.target.innerText, index: i }),
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    handleUpdate (response)
+    doc.updateLabel({ label, index: i })
   }
 
+  /** @type string[] */
+  $: labels = doc?.labels$ || []
   async function addLabel () {
-    doc.labels = (doc.labels || []).filter(label => (label !== ''))
-    doc.labels.push('');
-    await tick();
-    window[`label-${doc.labels.length - 1}`].focus();
+    labels = (labels || []).filter(label => (label !== ''))
+    labels.push('')
+    await tick()
+
+    // @ts-ignore
+    window[`label-${labels.length - 1}`].focus()
   }
 </script>
 
 <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
   <div class="inline-flex rounded-md mb-4" role="group">
-    <button disabled={loading || doc.approved || !doc.labels?.length} on:click={() => execute('approve')} type="button" class="inline-flex disabled:bg-gray-200 stroke-green-600 fill-green-400 items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
+    <button disabled={!!loading || doc.approved$ || !labels?.length} on:click={() => execute('approve')} type="button" class="inline-flex disabled:bg-gray-200 stroke-green-600 fill-green-400 items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
       {#if loading === 'approve'}
         <svg class="animate-spin w-4 h-4 mr-2 text-purple-500 stroke-purple-500 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -124,7 +110,7 @@
       Approve Labels
     </button>
 
-    <button disabled={loading || doc.approved === false || !doc.labels?.length} on:click={() => execute('reject')} type="button" class="inline-flex stroke-red-400 items-center px-4 py-2 text-sm font-medium disabled:bg-gray-200 text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
+    <button disabled={!!loading || doc.approved$ === false || !labels?.length} on:click={() => execute('reject')} type="button" class="inline-flex stroke-red-400 items-center px-4 py-2 text-sm font-medium disabled:bg-gray-200 text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
       {#if loading === 'reject'}
         <svg class="animate-spin w-4 h-4 mr-2 text-purple-500 stroke-purple-500 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -139,7 +125,7 @@
       Reject Labels
     </button>
 
-    <button disabled={loading} on:click={() => execute('suggest')} type="button" class="inline-flex items-center stroke-yellow-400 px-4 py-2 text-sm font-medium text-gray-900 disabled:bg-gray-200 bg-white border border-gray-200 rounded-r-md hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
+    <button disabled={!!loading} on:click={() => execute('suggest')} type="button" class="inline-flex items-center stroke-yellow-400 px-4 py-2 text-sm font-medium text-gray-900 disabled:bg-gray-200 bg-white border border-gray-200 rounded-r-md hover:bg-gray-50 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-600 focus:indigo-600 ">
       {#if loading === 'suggest'}
         <svg class="animate-spin w-4 h-4 mr-2 text-purple-500 stroke-purple-500 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -166,14 +152,16 @@
     {/if}
   </div>
 
-	<div class="divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow border border-gray-300">
+	<div class="divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow border border-gray-300" style="view-transition-name: article;">
 		<div class="px-5 py-5">
-			<StatusIcon approved={doc.approved}/>
+			<div>
+        <StatusIcon approved={doc.approved$} loading={doc.approved$loading}/>
+      </div>
 
-      <h2 class="inline-block font-semibold ml-2">{doc.title}</h2>
+      <h2 class="inline-block font-semibold ml-2" >{doc.title$}</h2>
 
 			<a
-				href={doc.url}
+				href={doc.url$}
 				target="_blanc"
 				class="float-right m-1 inline-block text-gray-300 group-hover:text-gray-400"
 				aria-hidden="true"
@@ -187,9 +175,9 @@
 		</div>
 
 		<div class="px-5 py-2">
-      {#each doc?.labels || [] as label, i (label)}
+      {#each labels as label, i (label)}
         <span class="inline-flex items-center my-2 mr-2 text-sm font-medium rounded {labelStyles[i % labelStyles.length]}">
-          <span id="label-{i}" role="textbox" tabindex={i} on:keydown={(e) => updateLabel(e, i)} on:blur={(e) => updateLabel(e, i)} contenteditable="plaintext-only" class="mr-1 px-2 py-1 min-w-[30px]">
+          <span id="label-{i}" role="textbox" tabindex={i} on:keydown={(e) => updateLabel(e, i)} on:blur={(e) => updateLabel(e, i)} contenteditable="plaintext-only" class="mr-1 px-2 py-1 min-w-[30px] focus-visible:outline-none">
             {label}
           </span>
 
@@ -210,7 +198,7 @@
 		</div>
 
 		<div class="px-5 py-5">
-			{doc.body}
+			{doc.body$}
 		</div>
 	</div>
 </div>

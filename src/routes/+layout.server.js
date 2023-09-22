@@ -1,6 +1,12 @@
-import * as data from '$lib/server/data.ts'
-export const ssr = false // TODO: support SSR
+import { getCache } from '$lib/direct-source.js'
+export async function load () {
+  // TODO: only send cache for this page and handle public and private data!
 
-export function load() {
-	return data.getDocs()
+  return {
+    // use precache if server side model is used for full SSR
+    // preCache: getCache(),
+    streamed: {
+      cache: getCache()
+    }
+  }
 }
