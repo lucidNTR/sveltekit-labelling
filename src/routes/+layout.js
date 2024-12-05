@@ -7,6 +7,7 @@ export const ssr = true
 export const csr = true
 
 export async function load ({ data, fetch }) {
+  // FIXME: weird behaviour as cache is in tab but not in serviceworker cache?
   // For service worker mode something like:
   // if (!useDirectSource) {
   //   await import(`$lib/${useDirectSource ? '' : '' }-source.js`) works for some reason, nothing else, see vite

@@ -26,5 +26,8 @@ export async function handle(...args) {
 		// preload: ({ type, path }) => type === 'js' || path.includes('/important/')
 	})
 
+  response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp')
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
+
 	return response
 }

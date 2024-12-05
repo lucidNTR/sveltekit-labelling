@@ -9,7 +9,10 @@ const config = {
 		adapter: cloudflare(),
 		serviceWorker: { register: false }
 		// version: { name: child_process.execSync('git rev-parse HEAD').toString().trim() }
-	}
+	},
+  csrf: {
+    checkOrigin: false // required to stackblitz support
+  }
 }
 
 export default config

@@ -1,4 +1,4 @@
-let pageLength = 8
+// let pageLength = 8
 
 // FIXME: non pouch sync calls
 export default {
